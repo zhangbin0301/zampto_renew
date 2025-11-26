@@ -117,8 +117,8 @@ def exit_process(num=0):
             tg_notifacation(info)
     if iargs.keep:
         if 'page' in globals():
-            if page.url.startswith("https://hosting.zampto.net/?page=server"):
-                page.get("https://hosting.zampto.net/?page=overview")
+            if page.url.startswith("https://dash.zampto.net/server?id="):
+                page.get(overviewurl)
                 print("✅ 跳回overview页面。")
         print("✅ 启用了 -k 参数，保留浏览器模式")
     else:
