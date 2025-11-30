@@ -20,6 +20,12 @@ jobs:
             exit 1
           fi
           echo "✅ 账号信息已设置"
+          if [ -z "${{ secrets.CHROME_PROXY }}" ]; then
+            echo "⚠️ CHROME_PROXY 未设置，将退出。"
+            exit 1
+          else
+            echo "✅ CHROME_PROXY 已设置"
+          fi
           
       - name: 执行 Zampto Renew 容器
         run: |
@@ -31,4 +37,11 @@ jobs:
             -e CHROME_PROXY=${{ secrets.CHROME_PROXY }} \
             -v ${{ github.workspace }}/zampto_server.py:/app/zampto_server.py \
             -v ${{ github.workspace }}/requirements.txt:/app/requirements.txt \
+            -v ${{ github.workspace }}/screenshots:/app/screenshots \
             ghcr.io/liveqte/zampto_renew:latest
+
+      - name: 上传截图产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
