@@ -50,9 +50,9 @@ docker run -itd -e USERNAME=a@abc.com -e PASSWORD=pass -e TG_TOKEN=token -e TG_U
 运行脚本后，会在screenshots\下生成捕捉图像，可以校验结果。
 ## 2025年11月30号更新
 修复和改进：
-1、等待server_list时间过短，可能导致获取的列表为空。
-2、github action会上传截图，便于检查运行结果。
-3、修复CHROME_PROXY未正确传入启动参数的问题。
+- 1、等待server_list时间过短，可能导致获取的列表为空。
+- 2、github action会上传截图，便于检查运行结果。
+- 3、修复CHROME_PROXY未正确传入启动参数的问题。
 ## 2025年11月27-28号更新
 增加CHROME_PROXY(可选)，可以选择使用代理进行登录续期,恢复github action进行续期操作。
 ## 2025年11月26号更新
