@@ -104,9 +104,8 @@ homeurlend="/homepage"
 overviewurl="https://dash.zampto.net/overview"
 overviewurl_end="/overview"
 if chromepath:
-    print(f"✅ 使用浏览器路径：{chromepath}")
+    std_logger.info((f"✅ 使用浏览器路径：{chromepath}")
 else:
-    print("❌ 未找到可用的浏览器路径")
     error_exit("❌ 未找到可用的浏览器路径")
 print(username)
 if not username or not password:
@@ -116,12 +115,12 @@ if not username or not password:
 
 
 if not tgbot_token:
-    print("⚠️ 环境变量 TG_TOKEN 未设置，Telegram 通知功能将无法使用。")
-    print("💡 请使用 Docker 的 -e TG_TOKEN=your_bot_token 传入。")
+    std_logger.warning("⚠️ 环境变量 TG_TOKEN 未设置，Telegram 通知功能将无法使用。")
+    std_logger.warning("💡 请使用 Docker 的 -e TG_TOKEN=your_bot_token 传入。")
 
 if not user_id:
-    print("⚠️ 环境变量 TG_USERID 未设置，Telegram 通知功能将无法使用。")
-    print("💡 请使用 Docker 的 -e TG_USERID=your_user_id 传入。")
+    std_logger.warning("⚠️ 环境变量 TG_USERID 未设置，Telegram 通知功能将无法使用。")
+    std_logger.warning("💡 请使用 Docker 的 -e TG_USERID=your_user_id 传入。")
 
 def get_random_user_agent():
     """随机返回一个 User-Agent 字符串"""
@@ -141,13 +140,13 @@ def is_proxy_available(proxy_url: str, test_url: str = "http://www.google.com/ge
     try:
         resp = requests.get(test_url, proxies=proxies, timeout=timeout)
         if resp.status_code == 204:
-            print(f"✅ 代理可用: {proxy_url}\n")
+            std_logger.info(f"✅ 代理可用: {proxy_url}\n")
             return True
         else:
-            print(f"❌ 代理返回非预期状态码: {resp.status_code}\n")
+            std_logger.error(f"❌ 代理返回非预期状态码: {resp.status_code}\n")
             return False
     except Exception as e:
-        print(f"❌ 代理不可用: {e}\n")
+        std_logger.error(f"❌ 代理不可用: {e}\n")
         return False
 
 def check_google():
