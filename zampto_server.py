@@ -284,7 +284,7 @@ def attach_browser(port=9222):
         if is_port_open():
             browser = Chromium(port)
             if browser.states.is_alive:
-                print(f"✅ 成功接管浏览器（端口 {port}）")
+                std_logger.info(f"✅ 成功接管浏览器（端口 {port}）")
                 return browser
             print("❌ 接管失败，浏览器未响应")
         else:
@@ -297,7 +297,7 @@ def setup_proxy():
     global options
     pava=is_proxy_available(chrome_proxy)
     if chrome_proxy and pava:
-        print(f"✅ 代理可用，添加到启动参数: {chrome_proxy}")
+        std_logger.info(f"✅ 代理可用，添加到启动参数: {chrome_proxy}")
         options.set_argument(f'--proxy-server={chrome_proxy}')
     elif chrome_proxy and not pava:
         error_exit("❌ 指定代理不可用，为了保证账号安全退出不进入下一步操作。")
