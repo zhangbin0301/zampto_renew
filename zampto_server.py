@@ -1,5 +1,4 @@
 import os
-import sys
 import signal
 from DrissionPage import Chromium
 from DrissionPage.common import Settings
@@ -14,18 +13,25 @@ from functools import wraps
 import argparse
 import socket
 
+
 def signal_handler(sig, frame):
     print("\n捕捉到 Ctrl+C，正在退出...")
     # 这里可以添加清理逻辑，比如关闭文件、保存状态等
     exit(1)
+
+
 signal.signal(signal.SIGINT, signal_handler)
-#解析url中的id
+# 解析url中的id
 from urllib.parse import urlparse, parse_qs
+
+
 def get_id_from_url(url):
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
     return query_params.get('id', [None])[0]
-#解析参数
+
+
+# 解析参数
 parser = argparse.ArgumentParser(description="-k 在脚本运行结束后不结束浏览器")
 parser.add_argument('-k', '--keep', action='store_true', help='启用保留模式')
 parser.add_argument('-d', '--debug', action='store_true', help='启用调试模式')
@@ -93,26 +99,33 @@ info = ""
 tgbot_token = os.getenv("TG_TOKEN", "")
 user_id = os.getenv("TG_USERID", "")
 # chrome的代理
-chrome_proxy=os.getenv("CHROME_PROXY")
+chrome_proxy = os.getenv("CHROME_PROXY")
 # 用来判断登录是否成功
-login_deny=False
+login_deny = False
 # 全局常量
-signurl="https://auth.zampto.net/sign-in"
-signurl_end="auth.zampto.net/sign-in"
-homeurl="https://dash.zampto.net/homepage"
-homeurlend="/homepage"
-overviewurl="https://dash.zampto.net/overview"
-overviewurl_end="/overview"
+signurl = "https://auth.zampto.net/sign-in"
+signurl_end = "auth.zampto.net/sign-in"
+homeurl = "https://dash.zampto.net/homepage"
+homeurlend = "/homepage"
+overviewurl = "https://dash.zampto.net/overview"
+overviewurl_end = "/overview"
+
+def error_exit(msg):
+    global std_logger, info, iargs
+    std_logger.debug(f"[ERROR] {msg}")
+    info += f"[ERROR] {msg}\n"
+    exit(1)
+
 if chromepath:
     std_logger.info(f"✅ 使用浏览器路径：{chromepath}")
 else:
     error_exit("❌ 未找到可用的浏览器路径")
 print(username)
+
 if not username or not password:
     std_logger.warning("💡 请使用 Docker 的 -e 参数传入，例如：")
     std_logger.warning("docker run -itd -e USERNAME=your_username -e PASSWORD=your_password mingli2038/zam_ser:alpine")
     error_exit("❌ 缺少必要的环境变量 USERNAME 或 PASSWORD。")
-
 
 if not tgbot_token:
     std_logger.warning("⚠️ 环境变量 TG_TOKEN 未设置，Telegram 通知功能将无法使用。")
@@ -122,9 +135,11 @@ if not user_id:
     std_logger.warning("⚠️ 环境变量 TG_USERID 未设置，Telegram 通知功能将无法使用。")
     std_logger.warning("💡 请使用 Docker 的 -e TG_USERID=your_user_id 传入。")
 
+
 def get_random_user_agent():
     """随机返回一个 User-Agent 字符串"""
     return random.choice(USER_AGENTS)
+
 
 def is_proxy_available(proxy_url: str, test_url: str = "http://www.google.com/generate_204", timeout: int = 5) -> bool:
     """
@@ -149,6 +164,7 @@ def is_proxy_available(proxy_url: str, test_url: str = "http://www.google.com/ge
         std_logger.error(f"❌ 代理不可用: {e}\n")
         return False
 
+
 def check_google():
     try:
         response = requests.get("https://www.google.com", timeout=5)
@@ -160,11 +176,13 @@ def check_google():
     except requests.exceptions.RequestException as e:
         print(f"❌ ⚠️ 无法访问 Google，tg通知将不起作用：{e}")
         return False
+
+
 def exit_process(num=0):
-    global iargs,info,tgbot_token
+    global iargs, info, tgbot_token
     if info and info.strip():
         info = f"ℹ️ Zampto服务器续期通知\n用户：{username}\n{info}"
-        if check_google() and tgbot_token and user_id :
+        if check_google() and tgbot_token and user_id:
             tg_notifacation(info)
     if iargs.keep:
         if 'page' in globals():
@@ -175,7 +193,9 @@ def exit_process(num=0):
     else:
         std_logger.info("✅ 浏览器已关闭，避免进程驻留")
         safe_close_broser()
-    exit(num)  
+    exit(num)
+
+
 def safe_close_broser():
     if 'browser' in globals() and browser:
         try:
@@ -185,19 +205,16 @@ def safe_close_broser():
             print(f"⚠️ 关闭浏览器时出错：{e}")
     else:
         print("⚠️ 浏览器对象不存在或未初始化，跳过关闭")
-def error_exit(msg):
-    global std_logger,info,iargs
-    std_logger.debug(f"[ERROR] {msg}")
-    info+=f"[ERROR] {msg}\n"
-    exit(1)
 
 async def get_latest_tab_safe():
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, lambda: browser.latest_tab)
+
+
 def require_browser_alive(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        global browser,iargs
+        global browser, iargs
         if browser.tabs_count == 0:
             error_exit("⚠️ 页面已崩溃或未附加，请重试运行一次脚本/镜像")
         try:
@@ -206,12 +223,15 @@ def require_browser_alive(func):
             if iargs.keep and iargs.debug:
                 pass
             else:
-                save_close_broser()
+                safe_close_broser()
             error_exit("⚠️ 获取 latest_tab 超时，页面可能已崩溃")
-        
+
         return await func(*args, **kwargs)
+
     return wrapper
-def capture_screenshot( file_name=None,save_dir='screenshots'):
+
+
+def capture_screenshot(file_name=None, save_dir='screenshots'):
     global page
     import os
     os.makedirs(save_dir, exist_ok=True)
@@ -225,6 +245,7 @@ def capture_screenshot( file_name=None,save_dir='screenshots'):
     except Exception as e:
         print("⚠️ 截图失败，未能成功保存。")
 
+
 def tg_notifacation(meg):
     url = f"https://api.telegram.org/bot{tgbot_token}/sendMessage"
     payload = {
@@ -237,7 +258,7 @@ def tg_notifacation(meg):
 
 def setup(user_agent: str, user_data_path: str = None):
     global options
-    global page,browser
+    global page, browser
     options = (
         ChromiumOptions()
         .incognito(True)
@@ -251,7 +272,7 @@ def setup(user_agent: str, user_data_path: str = None):
     )
     if 'DISPLAY' not in os.environ:
         options.headless(True)
-        options.set_argument('--headless=new') 
+        options.set_argument('--headless=new')
         std_logger.info("✅ DISPLAY环境变量为空，浏览器使用无头模式")
     else:
         options.headless(False)
@@ -268,16 +289,19 @@ def setup(user_agent: str, user_data_path: str = None):
     # 获取当前激活的标签页
     page = browser.latest_tab
 
+
 @require_browser_alive
 async def test():
     pass
-    
+
+
 def is_port_open(host='127.0.0.1', port=9222, timeout=1):
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
     except (socket.timeout, ConnectionRefusedError, OSError):
         return False
+
 
 def attach_browser(port=9222):
     try:
@@ -293,9 +317,11 @@ def attach_browser(port=9222):
     except Exception as e:
         print(f"⚠️ 接管浏览器时出错：{e}")
         return None
+
+
 def setup_proxy():
     global options
-    pava=is_proxy_available(chrome_proxy)
+    pava = is_proxy_available(chrome_proxy)
     if chrome_proxy and pava:
         std_logger.info(f"✅ 代理可用，添加到启动参数: {chrome_proxy}")
         options.set_argument(f'--proxy-server={chrome_proxy}')
@@ -303,12 +329,14 @@ def setup_proxy():
         error_exit("❌ 指定代理不可用，为了保证账号安全退出不进入下一步操作。")
     else:
         print("未检测到可用代理，直接启动浏览器")
-        
+
+
 async def is_page_crashed(browser):
     async def check_title():
         page = browser.latest_tab
         title = page.title
         return 'Aw, Snap!' in title or '糟糕' in title
+
     try:
         crashed = await asyncio.wait_for(check_title(), timeout=5)
         return crashed
@@ -316,17 +344,17 @@ async def is_page_crashed(browser):
         return True
     except Exception as e:
         print(f'其他错误: {e}')
-        return False    
+        return False
+
 
 async def dev_setup():
     global options
-    global page,browser
+    global page, browser
     user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
     # user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
     # user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"
     # user_agent = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
     # user_agent = "Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Mobile Safari/537.36"
-
 
     options = (
         ChromiumOptions()
@@ -339,10 +367,10 @@ async def dev_setup():
         .set_argument('--remote-debugging-port=9222')
         .set_browser_path(binpath)
     )
-    
+
     if 'DISPLAY' not in os.environ:
         options.headless(True)
-        options.set_argument('--headless=new') 
+        options.set_argument('--headless=new')
         std_logger.info("✅ DISPLAY环境变量为空，浏览器使用无头模式")
     else:
         options.headless(False)
@@ -354,16 +382,16 @@ async def dev_setup():
     # print( browser.timeouts.script)
     # browser.set.timeouts(base=5,page_load=5,script=5)
 
-
     if browser is None or not browser.states.is_alive:
         # 接管失败，启动新浏览器
         browser = Chromium(options)
     # await test()
     page = browser.latest_tab
+
     # exit_code=await continue_execution()
-    #1 await open_web()
-    #2 login()
-    #3 await open_overview()
+    # 1 await open_web()
+    # 2 login()
+    # 3 await open_overview()
     # check_renew_result(page)
     # print(browser.tab_ids)
     # browser.quit()
@@ -374,28 +402,28 @@ async def dev_setup():
     # except asyncio.TimeoutError:
     #     print("获取 latest_tab 超时，可能页面崩溃")
     #     browser.new_tab('about:blank')
-        # browser.refresh()  # 或 
-        
-    
+    # browser.refresh()  # 或
+
 
 def inputauth(inpage):
     u = inpage.ele('x://*[@autocomplete="username email"]', timeout=30)
     print(u.set.value)
-    if u.set.value:   # 如果不为空
+    if u.set.value:  # 如果不为空
         u.clear(by_js=True)
+        sleep(2)
     u.input(username)
-    b= inpage.ele('x://button[normalize-space(.)="Sign in"]',timeout=30)
+    b = inpage.ele('x://button[@type="submit" and @name="submit"]', timeout=30)
     b.click(by_js=False)
     p = inpage.ele('x://*[@type="password"]', timeout=30)
     p.input(password)
 
 
 def clickloginin(inpage):
-    c = inpage.ele('x://button[normalize-space(.)="Continue"]',timeout=30)
+    c = inpage.ele('x://button[@type="submit" and @name="submit"]', timeout=30)
     xof = random.randint(1, 20)
     yof = random.randint(1, 10)
     c.offset(x=xof, y=yof).click(by_js=False)
-    skip = inpage.ele('x://div[@role="button" and normalize-space(.)="Skip"]',timeout=30)
+    skip = inpage.ele('x://div[@role="button" and normalize-space(.)="Skip"]', timeout=30)
     if skip:
         skip.click(by_js=False)
 
@@ -412,6 +440,7 @@ def check_element(desc, element, exit_on_fail=True):
             error_exit('✗ cloudflare认证失败，退出')
         return False
 
+
 async def wait_for(a, b=None):
     global std_logger
     if b is None:
@@ -420,13 +449,14 @@ async def wait_for(a, b=None):
     std_logger.debug(f"即将等待 {wait_time:.2f} 秒（范围：{a} 到 {b}）...")
     await asyncio.sleep(wait_time)
     std_logger.debug(f"等待结束：{wait_time:.2f} 秒")
-    
+
 
 def click_if_cookie_option(tab):
     deny = tab.ele("x://button[@class='fc-button fc-cta-do-not-consent fc-secondary-button']", timeout=15)
     if deny:
         deny.click()
         print('发现出现cookie使用协议，跳过')
+
 
 def renew_server(tab):
     renewbutton = tab.ele("x://a[contains(@onclick, 'handleServerRenewal')]", timeout=15)
@@ -436,10 +466,11 @@ def renew_server(tab):
     else:
         print("没找到renew按钮，无事发生")
 
+
 def check_renew_result(tab):
     global info
     nextRenewalTime = tab.ele("x://span[@id='nextRenewalTime']", timeout=15)
-    server_name_span=tab.ele("x://span[contains(@class,'server-name')]", timeout=15)
+    server_name_span = tab.ele("x://span[contains(@class,'server-name')]", timeout=15)
     if not nextRenewalTime:
         print("❌ [严重错误] 无法检查服务器存活时间状态，已终止程序执行！")
         error_exit(f'❌ [严重错误] 无法检查服务器存活时间状态，已终止程序执行！\n')
@@ -454,12 +485,14 @@ def check_renew_result(tab):
         report_left_time(server_name)
         error_exit(f'❌ [服务器: {server_name}] 续期失败\n')
 
+
 def report_left_time(server_name):
     global info
     left_time = page.ele('x://*[@id="nextRenewalTime"]', timeout=15)
     if left_time:
         info += f'🕒 [服务器: {server_name}] 存活期限：{left_time.inner_html}\n'
         print(f'🕒 [服务器: {server_name}] 存活期限：{left_time.inner_html}')
+
 
 @require_browser_alive
 async def open_server_tab():
@@ -479,8 +512,9 @@ async def open_server_tab():
         await asyncio.sleep(5)
         renew_server(page)
         check_renew_result(page)
-        ser_id=get_id_from_url(s)
+        ser_id = get_id_from_url(s)
         capture_screenshot(f"{ser_id}.png")
+
 
 @require_browser_alive
 async def open_overview():
@@ -493,35 +527,41 @@ async def open_overview():
     else:
         std_logger.error("没有在帐户主页找到overview入口，回退到直接访问")
         page.get(overviewurl)
-    await wait_for(7,10)
+    await wait_for(7, 10)
+
 
 @require_browser_alive
 async def login():
-    global info,login_deny
+    global info, login_deny
     if login_deny and page.url.endswith(signurl_end):
         page.get(signurl)
-        login_deny=False
+        login_deny = False
         await wait_for(1)
     inputauth(page)
     clickloginin(page)
-    await wait_for(10,15)
+    await wait_for(10, 15)
     if signurl_end in page.url:
         msg = f"⚠️ {username}登录失败，请检查认证信息是否正确。"
-        login_deny=True
+        login_deny = True
         error_exit(msg)
     else:
         std_logger.info(f"{username}登录成功")
+
+
 @require_browser_alive
 async def open_web():
     if not page.url.startswith(signurl):
         page.get(signurl)
-        await wait_for(10,15)
+        await wait_for(10, 15)
+
+
 steps = [
     {"match": "/newtab/", "action": open_web, "name": "open_web"},
     {"match": signurl_end, "action": login, "name": "account"},
     {"match": homeurlend, "action": open_overview, "name": "open_overview"},
     {"match": overviewurl_end, "action": open_server_tab, "name": "open_server_tab"},
 ]
+
 
 async def continue_execution(current_url: str = ""):
     global page, std_logger
@@ -533,10 +573,10 @@ async def continue_execution(current_url: str = ""):
     # 找到当前步骤
     start_index = 0
     current_step_name = "unknown"
-    
+
     for i, step in enumerate(steps):
         if step["match"] in url:
-            start_index = i 
+            start_index = i
             current_step_name = step.get("name", f"step_{i}")
             std_logger.info(f"检测到当前步骤: {current_step_name}")
             break
@@ -555,21 +595,20 @@ async def continue_execution(current_url: str = ""):
             result = action()
             if asyncio.iscoroutine(result):
                 await result
-            
+
             std_logger.debug(f"步骤 {step_name} 执行完成")
-            await wait_for(5,7)
+            await wait_for(5, 7)
             std_logger.debug(f"当前URL: {page.url if page else 'N/A'}")
 
-            
             # 截图记录
             screenshot_name = f"{step_name}_{i}.png"
             # if start_index!=2:
             capture_screenshot(screenshot_name)
-            
+
             # 给截图一点时间
             if i < len(steps) - 1:  # 不是最后一步
                 await wait_for(3)
-                
+
         except Exception as e:
             std_logger.error(f"步骤 {step_name} 执行失败: {e}")
             error_exit(f"步骤 {step_name} 执行失败: {e}")
@@ -578,9 +617,10 @@ async def continue_execution(current_url: str = ""):
     std_logger.info("所有步骤执行完成")
     return 0
 
+
 async def main():
-    global std_logger,iargs
-    exit_code=0
+    global std_logger, iargs
+    exit_code = 0
     user_agent = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
     if iargs.debug:
         std_logger.info("DEBUG模式")
@@ -589,12 +629,12 @@ async def main():
     else:
         setup(get_random_user_agent())
         try:
-            exit_code=await continue_execution()
+            exit_code = await continue_execution()
         except SystemExit as e:
             exit_code = e.code if isinstance(e.code, int) else 1
             print(f"捕获到系统退出，退出码: {exit_code}")
         except Exception as e:
-            exit_code=1
+            exit_code = 1
             print(f"执行过程中出现错误: {e}")
             # 可以选择记录日志或发送错误通知
         finally:
@@ -602,12 +642,12 @@ async def main():
 
 # 在脚本入口点运行
 if __name__ == "__main__":
-    
-    if iargs.retry > 0 :
-        for attempt in range(1,iargs.retry + 1):  # 包括第一次尝试
-            info+=f"开始第 {attempt} 次尝试，共 {iargs.retry} 次机会\n"
+
+    if iargs.retry > 0:
+        for attempt in range(1, iargs.retry + 1):  # 包括第一次尝试
+            info += f"开始第 {attempt} 次尝试，共 {iargs.retry} 次机会\n"
             success = asyncio.run(main())
-            if success==0:
+            if success == 0:
                 std_logger.debug("执行成功，无需重试")
                 exit_process(0)
                 break
@@ -620,5 +660,5 @@ if __name__ == "__main__":
         else:
             exit_process(success)
     else:
-        success=asyncio.run(main())
+        success = asyncio.run(main())
         exit_process(success)
