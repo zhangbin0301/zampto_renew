@@ -3,8 +3,8 @@ name: Zampto Renew
 on:
   workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '5 3 * * 3'  # 每周三
-    - cron: '13 1 * * 0'  # 每周日
+    - cron: '16 4 * * 1'  # 每周一
+    - cron: '27 2 * * 5'  # 每周五
 jobs:
   run-zampto:
     runs-on: ubuntu-latest
