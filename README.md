@@ -48,6 +48,8 @@ docker run -itd -e USERNAME=a@abc.com -e PASSWORD=pass -e TG_TOKEN=token -e TG_U
 
 ## 捕捉图像
 运行脚本后，会在screenshots\下生成捕捉图像，可以校验结果。
+## 2025年12月15号更新
+- 工作流使用的docker默认使用的64m的shm空间好像会让chrome在容器中崩溃，导致获取不到服务器列表，现在设置成2G，并且增加重试，提高成功率。
 ## 2025年12月14号更新
 - 1、修复登录表单在浏览器中文环境情况下无法选中问题。
 - 2、修复启动参数检查时可能引起的语法错误。
