@@ -40,9 +40,9 @@ jobs:
             ghcr.io/liveqte/zampto_renew:latest \
             /venv/bin/python zampto_server.py -r 3
 
-      - name: 上传截图产物
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: screenshots
+      # - name: 上传截图产物
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: screenshots
+      #     path: screenshots
